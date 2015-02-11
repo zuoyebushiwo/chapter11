@@ -27,28 +27,30 @@ public class PostDao {
 
 	@Autowired
 	private LobHandler lobHandler;
-	
+
 	@Autowired
-	private DataFieldMaxValueIncrementer incre; 
+	private DataFieldMaxValueIncrementer incre;
 
-	public void addPost(final Post post){
-    	String sql = " INSERT INTO t_post(post_id,user_id,post_text,post_attach)"
-			       + " VALUES(?,?,?,?)";
-    	jdbcTemplate.execute(sql,new AbstractLobCreatingPreparedStatementCallback(this.lobHandler) {
-	      protected void setValues(PreparedStatement ps,LobCreator lobCreator)
-                  throws SQLException {
-		    	    //1：固定主键
-				    //ps.setInt(1,1);
-		    	  
-		    	    //2：通过自增键指定主键值    	  
-		    	    ps.setInt(1, incre.nextIntValue());
-					ps.setInt(2, post.getUserId());	
-					lobCreator.setClobAsString(ps, 3, post.getPostText());
-					lobCreator.setBlobAsBytes(ps, 4, post.getPostAttach());
-				}
-			});
+	public void addPost(final Post post) {
+		String sql = " INSERT INTO t_post(post_id,user_id,post_text,post_attach)"
+				+ " VALUES(?,?,?,?)";
+		jdbcTemplate.execute(sql,
+				new AbstractLobCreatingPreparedStatementCallback(
+						this.lobHandler) {
+					protected void setValues(PreparedStatement ps,
+							LobCreator lobCreator) throws SQLException {
+						// 1：固定主键
+						// ps.setInt(1,1);
 
-    };
+						// 2：通过自增键指定主键值
+						ps.setInt(1, incre.nextIntValue());
+						ps.setInt(2, post.getUserId());
+						lobCreator.setClobAsString(ps, 3, post.getPostText());
+						lobCreator.setBlobAsBytes(ps, 4, post.getPostAttach());
+					}
+				});
+
+	};
 
 	public void getNativeConn() {
 	};
@@ -70,22 +72,25 @@ public class PostDao {
 
 	};
 
+	@SuppressWarnings("unchecked")
 	public void getAttach(final int postId, final OutputStream os) {
 		String sql = "SELECT post_attach FROM t_post WHERE post_id=? ";
-		jdbcTemplate.query(sql, new Object[] {postId},
-			new AbstractLobStreamingResultSetExtractor() {			
-				protected void handleNoRowFound() throws LobRetrievalFailureException {
+		jdbcTemplate.query(sql, new Object[] { postId },
+				new AbstractLobStreamingResultSetExtractor() {
+					protected void handleNoRowFound()
+							throws LobRetrievalFailureException {
 						System.out.println("Not Found result!");
 					}
-	                   
-				public void streamData(ResultSet rs) throws SQLException,IOException {
-						InputStream is = lobHandler.getBlobAsBinaryStream(rs, 1);
+
+					public void streamData(ResultSet rs) throws SQLException,
+							IOException {
+						InputStream is = lobHandler
+								.getBlobAsBinaryStream(rs, 1);
 						if (is != null) {
 							FileCopyUtils.copy(is, os);
 						}
-				}
-			}
-		);
+					}
+				});
 
 	};
 }
